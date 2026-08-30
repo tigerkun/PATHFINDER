@@ -1,5 +1,13 @@
 import time
 import uuid
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+ROOT = Path(__file__).resolve().parent.parent
+load_dotenv(ROOT / ".env")
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from app.core.state import prediction_repository
 from app.repositories.prediction_repository import PredictionRecord

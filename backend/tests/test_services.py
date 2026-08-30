@@ -82,7 +82,7 @@ def test_ai_service_invalid_json(monkeypatch):
         text = "not-json-response"
 
     class FakeModel:
-        def generate_content(self, _prompt):
+        async def generate_content(self, _prompt, **_kwargs):
             return FakeResponse()
 
     monkeypatch.setattr(
@@ -91,18 +91,38 @@ def test_ai_service_invalid_json(monkeypatch):
     )
 
     ai = AIService()
-    result = ai.analyze({"a": 1}, {"cgpa": 8})
-    assert "AI returned invalid JSON" in result["error"]
+    result = asyncio.run(ai.analyze({"a": 1}, {"cgpa": 8}))
+    assert "fallback_error" in result
+    assert result["recommended_role"]["title"] == "Generalist Engineer"
 
 
 def test_ai_service_fills_missing_defaults(monkeypatch):
     monkeypatch.setenv("GEMINI_API_KEY", "test-key")
 
+    report_payload = {
+        "recommended_role": {
+            "title": "Backend Engineer",
+            "definition": "Backend developer",
+            "scope": "Core APIs",
+            "confidence": 92
+        },
+        "alternative_roles": [{"title": "DevOps Engineer", "fit_score": 85}],
+        "indian_salary": {"fresher": "₹6-10 LPA", "mid": "₹12-22 LPA", "senior": "₹25-45 LPA"},
+        "match_pct": 88,
+        "profile_score": {"overall": 88, "activity": 85, "diversity": 90, "open_source": 75, "consistency": 86},
+        "strengths": ["Python", "FastAPI architecture"],
+        "gaps": ["Kubernetes"],
+        "action_items": ["Containerize microservices"],
+        "roadmap": [{"phase": "Phase 1", "weeks": "1-4", "focus": "Docker", "tasks": ["Build image"], "milestone": "Deploy"}],
+        "top_companies": ["Google", "Stripe"],
+        "verdict": "High-potential backend engineer."
+    }
+
     class FakeResponse:
-        text = json.dumps({"recommended_role": {"title": "Backend Engineer"}})
+        text = json.dumps(report_payload)
 
     class FakeModel:
-        def generate_content(self, _prompt):
+        async def generate_content(self, _prompt, **_kwargs):
             return FakeResponse()
 
     monkeypatch.setattr(
@@ -111,7 +131,7 @@ def test_ai_service_fills_missing_defaults(monkeypatch):
     )
 
     ai = AIService()
-    result = ai.analyze({"a": 1}, {"cgpa": 8})
+    result = asyncio.run(ai.analyze({"a": 1}, {"cgpa": 8}))
     assert result["recommended_role"]["title"] == "Backend Engineer"
     assert "verdict" in result
     assert "profile_score" in result
