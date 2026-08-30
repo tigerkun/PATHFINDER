@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Report — Career Intelligence Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+        rel="stylesheet">
+    <style nonce="{{ csp_nonce }}">
+        :root {
+            --bg: #0a0a0f;
+            --surface: #12121a;
+            --surface2: #16161f;
+            --border: #1e1e2e;
+            --accent: #6c63ff;
+            --accent2: #00d4aa;
+            --yellow: #f5c542;
+            --red: #ff6b6b;
+            --text: #e8e8f0;
+            --muted: #6b6b80;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Space Grotesk', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background:
+                radial-gradient(ellipse 50% 40% at 15% 15%, rgba(108, 99, 255, 0.07) 0%, transparent 60%),
+                radial-gradient(ellipse 40% 35% at 85% 85%, rgba(0, 212, 170, 0.05) 0%, transparent 60%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* LOADING */
+        #loading {
+            position: fixed;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            background: var(--bg);
+            z-index: 100;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        #loading-msg {
+            font-size: 0.95rem;
+            color: var(--muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        #loading-sub {
+            font-size: 0.8rem;
+            color: #3a3a55;
+            font-family: 'JetBrains Mono', monospace;
+            text-align: center;
+            max-width: 320px;
+        }
+
+        /* ERROR */
+        #error-state {
+            display: none;
+            position: fixed;
+            inset: 0;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            z-index: 100;
+        }
+
+        .error-card {
+            background: var(--surface);
+            border: 1px solid rgba(255, 107, 107, 0.3);
+            border-radius: 16px;
+            padding: 2.5rem;
+            max-width: 440px;
+            width: 90%;
+            text-align: center;
+        }
+
+        .error-card .icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .error-card h2 {
+            color: var(--red);
+            margin-bottom: 0.75rem;
+        }
+
+        .error-card p {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .error-card .back-btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: border-color 0.2s;
+        }
+
+        .error-card .back-btn:hover {
+            border-color: var(--accent);
+        }
+
+        /* REPORT */
+        #report {
+            display: none;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            background: rgba(10, 10, 15, 0.92);
+            backdrop-filter: blur(12px);
+            z-index: 50;
+        }
+
+        .header-bar .brand {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+
+        .header-bar .brand strong {
+            color: var(--text);
+        }
+
+        .header-bar a {
+            font-size: 0.82rem;
+            color: var(--accent);
+            text-decoration: none;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .header-user {
+            color: var(--accent2);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .main {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 2.5rem 1.5rem 4rem;
+        }
+
+        /* HERO */
+        .hero {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 2rem;
+            align-items: start;
+            margin-bottom: 1.5rem;
+            padding: 2rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        .hero-role-tag {
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--accent2);
+            background: rgba(0, 212, 170, 0.1);
+            border: 1px solid rgba(0, 212, 170, 0.25);
+            border-radius: 20px;
+            padding: 0.3rem 0.8rem;
+            margin-bottom: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        .hero h1 {
+            font-size: clamp(1.6rem, 4vw, 2.4rem);
+            font-weight: 700;
+            line-height: 1.2;
+            background: linear-gradient(135deg, #fff 50%, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .hero-def {
+            color: var(--muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 0.75rem;
+            max-width: 600px;
+        }
+
+        .hero-scope {
+            font-size: 0.85rem;
+            color: #a0a0b8;
+            line-height: 1.5;
+        }
+
+        .match-circle {
+            --pct: 0%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: conic-gradient(var(--accent) 0% var(--pct), var(--border) var(--pct) 100%);
+            flex-shrink: 0;
+        }
+
+        .match-inner {
+            width: 78px;
+            height: 78px;
+            background: var(--surface);
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .match-num {
+            font-size: 1.5rem;
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .match-label {
+            font-size: 0.6rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* GRIDS */
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.5rem;
+        }
+
+        .mb-125 {
+            margin-bottom: 1.25rem;
+        }
+
+        .mt-125 {
+            margin-top: 1.25rem;
+        }
+
+        .card-title {
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: var(--muted);
+            margin-bottom: 1rem;
+        }
+
+        /* SALARY */
+        .salary-tiers {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 0.75rem;
+        }
+
+        .salary-tier {
+            text-align: center;
+        }
+
+        .tier-label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-bottom: 0.3rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .tier-val {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--accent2);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .salary-tier.highlight .tier-val {
+            color: var(--accent);
+            font-size: 1.15rem;
+        }
+
+        /* SCORE BARS */
+        .score-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .score-row {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+
+        .score-row-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .score-key {
+            font-size: 0.82rem;
+            color: var(--text);
+        }
+
+        .score-val {
+            font-size: 0.82rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent2);
+        }
+
+        .score-bar {
+            height: 4px;
+            background: var(--border);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 2px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            width: 0;
+            transition: width 1s ease;
+        }
+
+        /* TAGS */
+        .tag-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .tag {
+            font-size: 0.78rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .tag.green {
+            background: rgba(0, 212, 170, 0.1);
+            color: var(--accent2);
+            border: 1px solid rgba(0, 212, 170, 0.2);
+        }
+
+        .tag.red {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--red);
+            border: 1px solid rgba(255, 107, 107, 0.2);
+        }
+
+        .tag.blue {
+            background: rgba(108, 99, 255, 0.12);
+            color: #a89dff;
+            border: 1px solid rgba(108, 99, 255, 0.25);
+        }
+
+        .tag.yellow {
+            background: rgba(245, 197, 66, 0.1);
+            color: var(--yellow);
+            border: 1px solid rgba(245, 197, 66, 0.2);
+        }
+
+        /* METRICS */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .metric-item {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.9rem;
+            text-align: center;
+        }
+
+        .m-val {
+            font-size: 1.3rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+            margin-bottom: 0.2rem;
+        }
+
+        .m-key {
+            font-size: 0.7rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        /* ROADMAP */
+        .roadmap-phases {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .phase-card {
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .phase-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.9rem 1.25rem;
+            background: var(--surface2);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .phase-header-left {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .phase-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent);
+        }
+
+        .phase-title {
+            font-weight: 600;
+            font-size: 0.92rem;
+        }
+
+        .phase-weeks {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.72rem;
+            color: var(--accent2);
+            background: rgba(0, 212, 170, 0.1);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .phase-toggle {
+            color: var(--muted);
+            font-size: 0.8rem;
+            transition: transform 0.25s;
+        }
+
+        .phase-toggle.open {
+            transform: rotate(180deg);
+        }
+
+        .phase-body {
+            padding: 0 1.25rem;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.35s ease, padding 0.35s ease;
+        }
+
+        .phase-body.open {
+            max-height: 500px;
+            padding: 0.75rem 1.25rem 1.25rem;
+        }
+
+        .phase-task-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .phase-task-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.6rem;
+            font-size: 0.88rem;
+            color: var(--text);
+        }
+
+        .phase-task-list li::before {
+            content: '→';
+            color: var(--accent);
+            flex-shrink: 0;
+        }
+
+        .phase-milestone {
+            font-size: 0.8rem;
+            color: var(--accent2);
+            background: rgba(0, 212, 170, 0.07);
+            border: 1px solid rgba(0, 212, 170, 0.15);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+        }
+
+        /* ALT ROLES */
+        .alt-roles {
+            display: flex;
+            flex-direction: column;
+            gap: 0.6rem;
+        }
+
+        .alt-role-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alt-role-name {
+            font-size: 0.88rem;
+            flex: 1;
+        }
+
+        .alt-score-bar {
+            flex: 2;
+            height: 6px;
+            background: var(--border);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .alt-score-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            border-radius: 3px;
+        }
+
+        .alt-score-num {
+            font-size: 0.78rem;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--muted);
+            width: 32px;
+            text-align: right;
+        }
+
+        /* VERDICT */
+        .verdict-box {
+            border: 1px solid rgba(108, 99, 255, 0.3);
+            background: linear-gradient(135deg, rgba(108, 99, 255, 0.06), rgba(0, 212, 170, 0.03));
+            border-radius: 14px;
+            padding: 1.75rem;
+            text-align: center;
+            margin-top: 1.25rem;
+        }
+
+        .verdict-label {
+            font-size: 0.72rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.75rem;
+        }
+
+        .verdict-text {
+            font-size: 1.05rem;
+            font-weight: 500;
+            line-height: 1.6;
+            color: var(--text);
+        }
+
+        @media (max-width: 700px) {
+            .grid2 {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                grid-template-columns: 1fr;
+            }
+
+            .match-circle {
+                margin: 0 auto;
+            }
+
+            .salary-tiers {
+                grid-template-columns: 1fr;
+                gap: 0.5rem;
+            }
+
+            .header-bar {
+                padding: 0.75rem 1rem;
+            }
+
+            .main {
+                padding: 1.5rem 1rem 3rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- LOADING -->
+    <div id="loading">
+        <div class="spinner"></div>
+        <div id="loading-msg">Fetching GitHub metrics...</div>
+        <div id="loading-sub">Analysis takes 10–20 seconds. Please wait.</div>
+    </div>
+
+    <!-- ERROR -->
+    <div id="error-state">
+        <div class="error-card">
+            <div class="icon">⚠️</div>
+            <h2>Analysis Failed</h2>
+            <p id="error-text">Something went wrong. Please check your details and try again.</p>
+            <a href="/" class="back-btn">← Go Back &amp; Retry</a>
+        </div>
+    </div>
+
+    <!-- REPORT -->
+    <div id="report">
+        <div class="header-bar">
+            <div class="brand">
+                🎯 <strong>Career Intelligence Engine</strong>
+                &nbsp;·&nbsp;
+                <span id="header-user" class="header-user"></span>
+            </div>
+            <a href="/">← New Analysis</a>
+        </div>
+
+        <div class="main">
+
+            <!-- HERO -->
+            <div class="hero">
+                <div>
+                    <div class="hero-role-tag" id="confidence-tag"></div>
+                    <h1 id="role-title">Loading...</h1>
+                    <p class="hero-def" id="role-def"></p>
+                    <p class="hero-scope" id="role-scope"></p>
+                </div>
+                <div class="match-circle" id="match-circle">
+                    <div class="match-inner">
+                        <span class="match-num" id="match-pct">—</span>
+                        <span class="match-label">Match</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SALARY + SCORES -->
+            <div class="grid2">
+                <div class="card">
+                    <div class="card-title">💰 Indian Market Salary (2026)</div>
+                    <div class="salary-tiers">
+                        <div class="salary-tier">
+                            <div class="tier-label">Fresher</div>
+                            <div class="tier-val" id="sal-fresher">—</div>
+                        </div>
+                        <div class="salary-tier highlight">
+                            <div class="tier-label">Mid Level</div>
+                            <div class="tier-val" id="sal-mid">—</div>
+                        </div>
+                        <div class="salary-tier">
+                            <div class="tier-label">Senior</div>
+                            <div class="tier-val" id="sal-senior">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-title">📊 Profile Scores</div>
+                    <div class="score-list" id="score-list"></div>
+                </div>
+            </div>
+
+            <!-- GITHUB METRICS -->
+            <div class="card mb-125">
+                <div class="card-title">🐙 GitHub Metrics Snapshot</div>
+                <div class="metrics-grid" id="metrics-grid"></div>
+            </div>
+
+            <!-- STRENGTHS + GAPS -->
+            <div class="grid2">
+                <div class="card">
+                    <div class="card-title">✅ Strengths</div>
+                    <div class="tag-list" id="strengths-list"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🔧 Skill Gaps</div>
+                    <div class="tag-list" id="gaps-list"></div>
+                </div>
+            </div>
+
+            <!-- ACTIONS + ALT ROLES -->
+            <div class="grid2 mt-125">
+                <div class="card">
+                    <div class="card-title">⚡ Immediate Actions</div>
+                    <div class="tag-list" id="actions-list"></div>
+                </div>
+                <div class="card">
+                    <div class="card-title">🔀 Alternative Roles</div>
+                    <div class="alt-roles" id="alt-roles"></div>
+                </div>
+            </div>
+
+            <!-- ROADMAP -->
+            <div class="card mt-125">
+                <div class="card-title">🗺️ Personalized 16-Week Roadmap</div>
+                <div class="roadmap-phases" id="roadmap"></div>
+            </div>
+
+            <!-- TOP COMPANIES -->
+            <div class="card mt-125">
+                <div class="card-title">🏢 Target Companies</div>
+                <div class="tag-list" id="companies-list"></div>
+            </div>
+
+            <!-- VERDICT -->
+            <div class="verdict-box">
+                <div class="verdict-label">🤖 AI Verdict</div>
+                <div class="verdict-text" id="verdict">—</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script src="/static/result.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,50 @@
+name: backend-ci
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pip-tools
+
+      - name: Verify dependency lock is up to date
+        run: |
+          python -m piptools compile requirements.in --output-file requirements.txt
+          git diff --exit-code -- requirements.txt
+
+      - name: Syntax check
+        run: |
+          python -m py_compile app/main.py app/core/*.py app/domain/*.py app/routers/*.py services/*.py tests/*.py scripts/export_openapi.py
+
+      - name: Run tests
+        env:
+          API_AUTH_KEY: test-key-123456789
+          JWT_SECRET_KEY: jwt-secret-for-tests
+          GITHUB_TOKEN: test-token
+          GEMINI_API_KEY: test-gemini
+        run: python -m pytest -q

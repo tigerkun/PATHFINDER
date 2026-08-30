@@ -1,0 +1,13 @@
+/* style.css — Career Intelligence Engine */
+/* All primary styles are embedded in each HTML template for reliability. */
+/* Add any global overrides here if needed. */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}

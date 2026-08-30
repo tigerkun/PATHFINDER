@@ -1,0 +1,23 @@
+# Python cache and build artifacts
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+*.db
+
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+
+# Virtual environments
+venv/
+.venv/
+
+# Tooling
+.pytest_cache/
+.mypy_cache/
+
+# IDE
+.vscode/
